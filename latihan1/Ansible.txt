@@ -1,0 +1,132 @@
+Ansible
+=======
+- Recommended: Setup SSH Key Pair
+  1). ssh-copy-id -f lukman@192.168.56.101
+  2). Manual copy id_rsa.pub to /home/lukman/.ssh/authorized_keys
+
+
+
+Inverntory:
+===========
+Kumpulan alamat server (bisa juga menentukan variable: user,connection)
+	- /etc/ansible/hosts									; Default
+
+Ad-hoc Commad:
+==============
+$ ansible all -i 192.168.43.94, -m ping						; Ad-hoc Command
+	-i, inventory (file/list ip, dipisahkan dg “,”)
+	-m, option module
+	ping, module name	
+
+$ ansible all -i hosts -m ping
+
+Setup: Gathering server information
+$ ansible all -i 192.168.43.94, -m setup					; Ad-hoc Command
+
+$ mkdir ~/Document/Ansible/
+$ cd ~/Document/Ansible/
+$ nano hosts
+
+Default-nya menggunakan modul ”command”
+$ ansible all -i hosts -a "uname -a"						; Ad-hoc Command
+$ ansible all -i hosts -a "ls ~/.ssh"
+
+Run command tanpa melalui modul Shell
+$ ansible all -i hosts -m command -a "echo $0"				; Ad-hoc Command
+
+Run command melalui modul Shell
+$ ansible all -i hosts -m shell -a "uname -a"				; Ad-hoc Command
+$ ansible all -i hosts -m shell -a "ifconfig"				; Ad-hoc Command
+
+Melihat isi folder /home dengan category host "ubuntu" pada inverntory file Default "/etc/ansible/hosts".
+$ ansible ubuntu -a "ls /home"
+
+Melihat isi folder /home dengan category host "ubuntu" pada inverntory file "hosts".
+$ ansible ubuntu -i hosts -a "ls /home"
+
+Melihat daftar hosts didalam Inventory file Default "/etc/ansible/hosts"
+$ ansible all -i hosts --list-hosts
+
+Melihat daftar hosts didalam Inventory file spesific "~/Document/Ansible/hosts"
+$ ansible all -i hosts --list-hosts
+
+Request Password
+$ ansible all -i hosts --ask-su-pass -m ping
+$ ansible all -i hosts --ask-sudo-pass -m ping
+$ ansible all -i hosts --ask-vault-pass -m ping
+
+Without Request Password
+$ ansible all -i hosts --become-method sudo -m ping
+$ ansible all -i hosts --become-method su -m ping
+$ ansible all -i hosts --become-user root -m ping
+
+Melihat nama Plugin (modul) dan source file
+$ ansible-doc -F
+
+Copy file dari Local 
+$ ansible ubuntu -i hosts -m copy -a "src=~/Documents/Ansible/hosts dest=/home/lukman"
+
+Chmod file Server
+$ ansible ubuntu -i hosts -m file -a "dest=/home/lukman/hosts mode=600"
+
+#==========================================
+# [ubuntu:vars]							  #
+# ansible_user=lukmanlab				  #
+# ansible_become=yes					  #
+# ansible_become_method=sudo 			  #
+# ansible_become_pass=lukmanlab			  #
+#										  #
+# [ubuntu]								  #
+# 192.168.56.101 #ansible_ssh_user=lukman #
+# 192.168.56.102 #ansible_ssh_user=lukman #
+# 192.168.56.103 #ansible_ssh_user=lukman #
+#==========================================
+
+Chown file Server
+$ ansible ubuntu -i hosts -m file -a "dest=/home/lukman/hosts owner=root group=root"
+
+Mkdir -p /ansible/folder and create owner
+$ ansible ubuntu -i hosts -m file -a "dest=/ansible/folder mode=755 owner=lukman group=lukman state=directory"
+
+Delete Directory "folder"
+$ ansible ubuntu -i hosts -m file -a "dest=/ansible/folder state=absent"
+
+Ensure a package is installed, but don’t update it: (otomatis install)
+$ ansible ubuntu -i hosts -m apt -a "name=apache2 state=present"
+
+Ensure a package is at the latest version: (otomatis install)
+$ ansible ubuntu -i hosts -m apt -a "name=apache2 state=latest"
+
+Ensure a package is not installed: (unistall)
+$ ansible ubuntu -i hosts -m apt -a "name=apache2 state=absent"
+
+Ensure a service is started on all webservers: (Jika ada yang down langsung di start)
+$ ansible ubuntu -i hosts -m service -a "name=apache2 state=started"
+
+Alternatively, restart a service on all webservers:
+$ ansible ubuntu -i hosts -m service -a "name=apache2 state=restarted"
+
+Ensure a service is stopped:
+$ ansible ubuntu -i hosts -m service -a "name=apache2 state=stopped"
+
+sudo apt install whois
+mkpasswd --method=des
+	Password: <isi password>
+	sovODOzo47eKo
+
+Create and manipulation User
+$ ansible ubuntu -i hosts -m user -a "name=root password=sovODOzo47eKo"
+
+Remove user
+$ ansible ubuntu -i hosts -m user -a "name=test state=absent"
+
+Update System
+$ ansible ubuntu -i hosts -a "sudo apt update -y"
+
+Dist-Upgrade System
+$ ansible ubuntu -i hosts -a "sudo apt dist-upgrade -y"
+
+Reboot
+$ ansible ubuntu -i hosts -m reboot
+
+625779297

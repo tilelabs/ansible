@@ -1,0 +1,13 @@
+[ubuntu:vars]
+ansible_user=lukman
+ansible_become=yes 
+ansible_become_method=sudo 
+ansible_become_pass=lukmanlab
+
+[ubuntu]
+192.168.56.101 #ansible_ssh_user=lukman
+192.168.56.102 #ansible_ssh_user=lukman
+192.168.56.103 #ansible_ssh_user=lukman
+#192.168.56.101
+#192.168.56.102
+#192.168.56.103
