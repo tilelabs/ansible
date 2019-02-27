@@ -118,7 +118,7 @@
       login_password: "{{mysql_password}}"
       name: "{{db_user}}"
       password: "{{db_pass}}"
-      priv: '*.*:ALL,GRANT'
+      priv: "{{db_name}}.*:ALL,GRANT"
       state: present
     
   - name: Copy Template wp-config.php to Server
