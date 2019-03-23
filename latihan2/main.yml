@@ -1,0 +1,171 @@
+---
+- hosts: all
+  gather_facts: no
+  become: yes
+  become_method: sudo
+  tasks:
+  - name: Pre-Requirrement
+    raw: apt install python-minimal -y
+
+- hosts: all
+  tasks: 
+  - name: Install a list of packages
+    become: yes
+    apt:
+     name: ['zip', 'git', 'unzip', 'python-mysqldb']
+     state: present
+
+- hosts: server1
+  vars:
+     domain: lukmanlab.com
+  gather_facts: no
+
+  handlers:
+  - name: restart nginx
+    become: yes
+    systemd: name=nginx state=restarted
+
+  tasks:
+  - name: Install Nginx Web Server
+    become: yes
+    apt:
+       name: nginx
+       state: present
+
+  - name: Install PHP-FPM & PHP-MySQL
+    become: yes
+    apt:
+     name: ['php-fpm','php-mysql']
+     state: present
+  
+  - name: Template default Nginx
+    become: yes 
+    template: src=default.j2 dest=/etc/nginx/sites-available/default
+    notify: restart nginx
+
+  - name: Copy File PHP Info
+    become: yes
+    copy: 
+       src: info.php
+       dest: /var/www/html
+       owner: www-data
+       group: www-data
+
+  - name: Download and Extract Wordpress
+    become: yes
+    unarchive:
+       src: https://wordpress.org/latest.zip
+       dest: /var/www/html
+       remote_src: yes
+       owner: www-data
+       group: www-data
+
+- hosts: server1
+  vars:
+    user_mysql: root
+    password_mysql: password
+    db_user: "wpuser"
+    db_name: "wordpress"
+    db_pass: "password"
+  gather_facts: no
+
+  handlers:
+  - name: restart mysqlserver
+    systemd: name=mysql state=restarted
+
+  tasks:
+  - name: Install devconf-utils
+    become: yes
+    apt:
+       name: debconf-utils
+
+  - name: DebConfig Root Password for MySQL Server
+    become: yes
+    debconf:
+      name: mysql-server-5.7
+      question: mysql-server/root_password
+      value: "{{password_mysql}}"
+      vtype: password
+
+  - name: DebConfig Root Password for MySQL Server Again
+    become: yes
+    debconf:
+      name: mysql-server-5.7
+      question: mysql-server/root_password_again
+      value: "{{password_mysql}}"
+      vtype: password
+
+  - name: Install MySQL Server 5.7
+    become: yes
+    apt:
+       name: mysql-server
+       state: present
+
+  - name: Login MySQL without Password
+    template: 
+      src: my.cnf.j2
+      dest: ~/.my.cnf
+
+  - name: Create a new database with name 'wordpress'
+    mysql_db:
+      name: "{{db_name}}"
+      state: present
+  
+  - name: Create a new user with name 'wpuser'
+    mysql_user:
+      name: "{{db_user}}"
+      password: "{{db_pass}}"
+      priv: "{{db_name}}.*:ALL,GRANT"
+      state: present
+    
+  - name: Copy Template wp-config.php to Server
+    become: yes 
+    copy: 
+      src: /var/www/html/wordpress/wp-config-sample.php
+      dest: /var/www/html/wordpress/wp-config.php
+      owner: www-data
+      group: www-data
+      remote_src: yes
+      mode: 0644
+
+  - name: Configuring wordpress
+    become: yes
+    no_log: True
+    replace:
+      path: /var/www/html/wordpress/wp-config.php
+      regexp: "{{ item.old }}"
+      replace: "{{ item.new }}"
+    loop:
+      - { old: 'database_name_here', new: "{{ db_name }}" }
+      - { old: 'username_here', new: "{{ db_user }}" }
+      - { old: 'password_here', new: "{{ db_pass }}" }
+
+  - name: Remove default wordpress encryption
+    become: yes
+    lineinfile:
+      path: /var/www/html/wordpress/wp-config.php
+      regexp: "{{ item }}"
+      state: absent
+    with_items:
+      - AUTH_KEY
+      - SECURE_AUTH_KEY
+      - LOGGED_IN_KEY
+      - NONCE_KEY
+      - AUTH_SALT
+      - SECURE_AUTH_SALT
+      - LOGGED_IN_SALT
+      - NONCE_SALT
+
+  - name: Getting wordpress encryption
+    uri: 
+      url: "https://api.wordpress.org/secret-key/1.1/salt/"
+      return_content: yes   
+    register: enc_key
+
+  - name: Configuring wordpress encryption
+    become: yes
+    blockinfile:
+      insertbefore: 'Sets up WordPress vars and included files'
+      path: /var/www/html/wordpress/wp-config.php
+      block: "{{enc_key.content}}"
+      marker: "# {mark} ANSIBLE MANAGED BLOCK"
