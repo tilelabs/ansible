@@ -1,4 +1,3 @@
-##
 # You should look at the following URL's in order to grasp a solid understanding
 # of Nginx configuration files in order to fully unleash the power of Nginx.
 # https://www.nginx.com/resources/wiki/start/
@@ -13,8 +12,7 @@
 # available underneath a path with that package name, such as /drupal8.
 #
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
-##
-
+#
 # Default server configuration
 #
 server {
@@ -52,7 +50,7 @@ server {
 	}
 
 	location /wordpress {
-		try_files $uri /wordpress/index.php;
+		try_files $uri $uri/ /wordpress/index.php?$args;
 	}
 
 	#PHP FPM

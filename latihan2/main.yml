@@ -45,21 +45,25 @@
 
   - name: Copy File PHP Info
     become: yes
-    copy: src=info.php dest=/var/www/html
-
-  - name: Download and Extract Wordpress
-    become: yes
-    unarchive:
-       src: https://wordpress.org/latest.zip
+    copy: 
+       src: info.php
        dest: /var/www/html
-       remote_src: yes
        owner: www-data
        group: www-data
 
+  # - name: Download and Extract Wordpress
+  #   become: yes
+  #   unarchive:
+  #      src: https://wordpress.org/latest.zip
+  #      dest: /var/www/html
+  #      remote_src: yes
+  #      owner: www-data
+  #      group: www-data
+
 - hosts: server1
   vars:
-    mysql_user: root
-    mysql_password: password
+    user_mysql: root
+    password_mysql: password
     db_user: "wpuser"
     db_name: "wordpress"
     db_pass: "password"
@@ -80,7 +84,7 @@
     debconf:
       name: mysql-server-5.7
       question: mysql-server/root_password
-      value: "{{mysql_password}}"
+      value: "{{password_mysql}}"
       vtype: password
 
   - name: DebConfig Root Password for MySQL Server Again
@@ -88,7 +92,7 @@
     debconf:
       name: mysql-server-5.7
       question: mysql-server/root_password_again
-      value: "{{mysql_password}}"
+      value: "{{password_mysql}}"
       vtype: password
 
   - name: Install MySQL Server 5.7
@@ -96,26 +100,19 @@
     apt:
        name: mysql-server
        state: present
-    #changed_when: True
-    #notify: restart mysqlserver
 
   - name: Login MySQL without Password
-    become: yes
     template: 
       src: my.cnf.j2
-      dest: /root/.my.cnf
+      dest: ~/.my.cnf
 
   - name: Create a new database with name 'wordpress'
-    become: yes
     mysql_db:
-      login_password: "{{mysql_password}}"
       name: "{{db_name}}"
       state: present
   
   - name: Create a new user with name 'wpuser'
-    become: yes
     mysql_user:
-      login_password: "{{mysql_password}}"
       name: "{{db_user}}"
       password: "{{db_pass}}"
       priv: "{{db_name}}.*:ALL,GRANT"
@@ -123,12 +120,52 @@
     
   - name: Copy Template wp-config.php to Server
     become: yes 
-    template: 
-      src: wp-config.php.j2
+    copy: 
+      src: /var/www/html/wordpress/wp-config-sample.php
       dest: /var/www/html/wordpress/wp-config.php
       owner: www-data
       group: www-data
+      remote_src: yes
       mode: 0644
 
-#mysql> GRANT ALL PRIVILEGES ON wordpress.* TO 'wpuser'@'localhost';
-#Query OK, 0 rows affected (0.00 sec)
+  - name: Configuring wordpress
+    become: yes
+    no_log: True
+    replace:
+      path: /var/www/html/wordpress/wp-config.php
+      regexp: "{{ item.old }}"
+      replace: "{{ item.new }}"
+    loop:
+      - { old: 'database_name_here', new: "{{ db_name }}" }
+      - { old: 'username_here', new: "{{ db_user }}" }
+      - { old: 'password_here', new: "{{ db_pass }}" }
+
+  - name: Remove default wordpress encryption
+    become: yes
+    lineinfile:
+      path: /var/www/html/wordpress/wp-config.php
+      regexp: "{{ item }}"
+      state: absent
+    with_items:
+      - AUTH_KEY
+      - SECURE_AUTH_KEY
+      - LOGGED_IN_KEY
+      - NONCE_KEY
+      - AUTH_SALT
+      - SECURE_AUTH_SALT
+      - LOGGED_IN_SALT
+      - NONCE_SALT
+
+  - name: Getting wordpress encryption
+    uri: 
+      url: "https://api.wordpress.org/secret-key/1.1/salt/"
+      return_content: yes   
+    register: enc_key
+
+  - name: Configuring wordpress encryption
+    become: yes
+    blockinfile:
+      insertbefore: 'Sets up WordPress vars and included files'
+      path: /var/www/html/wordpress/wp-config.php
+      block: "{{enc_key.content}}"
+      marker: "# {mark} ANSIBLE MANAGED BLOCK"

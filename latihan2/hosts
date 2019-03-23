@@ -9,4 +9,4 @@ ansible_become_pass=lukmanlab
 #192.168.56.103 ansible_user=lukman 
 
 [server1]
-192.168.56.101 ansible_user=lukman 
+192.168.43.108 ansible_user=lukman 
