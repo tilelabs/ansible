@@ -51,14 +51,14 @@
        owner: www-data
        group: www-data
 
-  # - name: Download and Extract Wordpress
-  #   become: yes
-  #   unarchive:
-  #      src: https://wordpress.org/latest.zip
-  #      dest: /var/www/html
-  #      remote_src: yes
-  #      owner: www-data
-  #      group: www-data
+  - name: Download and Extract Wordpress
+    become: yes
+    unarchive:
+       src: https://wordpress.org/latest.zip
+       dest: /var/www/html
+       remote_src: yes
+       owner: www-data
+       group: www-data
 
 - hosts: server1
   vars:
