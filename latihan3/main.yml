@@ -1,0 +1,10 @@
+---
+- hosts: prod
+  gather_facts: no
+  roles:
+    - prepare
+
+- hosts: dev
+  gather_facts: no
+  roles:
+    - prepare

@@ -1,0 +1,8 @@
+[all:vars]
+ansible_become_pass=lukmanlab
+
+[prod]
+192.168.1.1 ansible_user=lukman ansible_port=70
+
+[dev]
+192.168.1.2 ansible_user=lukman ansible_port=71

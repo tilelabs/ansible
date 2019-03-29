@@ -1,0 +1,5 @@
+---
+# tasks file for common
+- name: Pre-Requirrement
+  become: yes
+  raw: apt install python-minimal -y
