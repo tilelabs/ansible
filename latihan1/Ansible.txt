@@ -1,10 +1,8 @@
 Ansible
 =======
 - Recommended: Setup SSH Key Pair
-  1). ssh-copy-id -f lukman@192.168.56.101
+  1). ssh-copy-id -i ~/.ssh/id_rsa.pub lukman@192.168.43.94
   2). Manual copy id_rsa.pub to /home/lukman/.ssh/authorized_keys
-
-
 
 Inverntory:
 ===========
