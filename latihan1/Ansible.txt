@@ -126,5 +126,3 @@ $ ansible ubuntu -i hosts -a "sudo apt dist-upgrade -y"
 
 Reboot
 $ ansible ubuntu -i hosts -m reboot
-
-625779297
